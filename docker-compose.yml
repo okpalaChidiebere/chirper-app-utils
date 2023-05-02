@@ -1,0 +1,117 @@
+version: "3.9"
+
+services:
+  # Proxies requests to internal services
+  chirper-app-reverse-proxy:
+    image: aluminetchidiebre/chirper-app-reverse-proxy:latest # goes to your repository on Docker Hub. This will make it easier to run 'docker-compse push' to push the images to our Dockerhub after logining in to our console
+    container_name: chirper-app-reverse-proxy
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    build:
+      context: ../chirper-app-reverse-proxy
+    depends_on: #the services listed here will be ochestrated by docker-compose.
+      - chirper-app-tweet-service
+      - chirper-app-user-service
+      - chirper-app-image-filter-service
+    ports:
+      # <machine_host_port>:<container_port>
+      - 8080:8080
+      - 1443:1443
+    restart: always
+
+  ng-chirper-app:
+    image: aluminetchidiebre/ng-chirper-app:latest
+    container_name: ng-chirper-app
+    build:
+      context: ../ng-chirper-app
+      # uncomment if you want to test out production type build locally
+      # args:
+      #   - ENVIRONMENT=prod
+    ports:
+      - 4200:80
+    restart: on-failure
+
+  chirper-app-user-service:
+    image: aluminetchidiebre/chirper-app-user-service:latest
+    container_name: chirper-app-user-service
+    secrets:
+      - source: aws
+        target: /root/.aws/credentials
+        uid: "1000"
+        gid: "1000"
+        mode: 0700
+    build:
+      context: ../chirper-app-api-user
+      args:
+        # if you dont have the GOPRIVATE env variable defined in your terminal i set the default arg value to 'github.com/okpalaChidiebere' https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html#tag_18_06_02
+        # You can put then in ur bash_profile or .zshrc the run`source ~/.zshrc`
+        - GOPRIVATE=${GOPRIVATE:-github.com/okpalaChidiebere}
+      # similar to passing the --secret flag during docker build. like `--secret id=gitcredentials,src=/.netrc` see doc https://docs.docker.com/engine/reference/builder/#run---mounttypesecret
+      secrets:
+        - gitcredentials
+    depends_on: #the services listed here will be ochestrated by docker-compose.
+      - chirper-app-image-filter-service
+    # thesame as passing the --env-file flag. like docker run --env-file=app.env documentation https://docs.docker.com/compose/environment-variables/set-environment-variables/
+    # Alternatively, you can use the environment attribute and list the environments, like
+    # environment:
+    #   AWS_REGION: ${AWS_REGION}
+    #   AWS_PROFILE: ${AWS_PROFILE}
+    # but reading from an env file is cleaner
+    env_file:
+      - app.env
+    environment:
+      IMAGE_FILTER_SERVICE_NAME: chirper-app-image-filter-service
+      IMAGE_FILTER_SERVICE_PORT: 9000
+    ports:
+      - 8000:8000
+    restart: on-failure
+
+  chirper-app-tweet-service:
+    image: aluminetchidiebre/chirper-app-tweet-service:latest
+    container_name: chirper-app-tweet-service
+    secrets:
+      - source: aws
+        target: /root/.aws/credentials
+        uid: "1000"
+        gid: "1000"
+        mode: 0700
+    build:
+      context: ../chirper-app-api-tweet
+      args:
+        - GOPRIVATE=${GOPRIVATE:-github.com/okpalaChidiebere}
+      secrets:
+        - gitcredentials
+    env_file:
+      - app.env
+    ports:
+      - 6060:6060
+      - 6061:60061
+    restart: on-failure
+
+  chirper-app-image-filter-service:
+    image: aluminetchidiebre/chirper-app-api-image-filter-service:latest
+    container_name: chirper-app-api-image-filter-service
+    secrets:
+      - source: aws
+        target: /root/.aws/credentials
+        uid: "1000"
+        gid: "1000"
+        mode: 0700
+    build:
+      context: ../chirper-app-api-image-filter
+      args:
+        - GOPRIVATE=${GOPRIVATE:-github.com/okpalaChidiebere}
+      secrets:
+        - gitcredentials
+    env_file:
+      - app.env
+    ports:
+      - 9000:9000
+    restart: on-failure
+
+# documentation see https://docs.docker.com/compose/compose-file/compose-file-v3/#secrets
+secrets:
+  aws:
+    file: $HOME/.aws/credentials # we assume you have aws-cli installed and have user added to the credentials file. confirm that by running `open ~/.aws/credentials` https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/
+  gitcredentials:
+    file: .netrc

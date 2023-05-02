@@ -1,0 +1,40 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+# create EKS Cluster
+metadata:
+  name: Demo
+  region: ca-central-1
+  version: "1.25"
+
+# use an existing Cluster Service Role. if we don't attach, eksctl will do this for us
+# Make sure you attach the policies for AmazonEKSClusterPolicy, AmazonECS_FullAccess, and AmazonEKSServicePolicy to the iam role you create
+iam:
+  serviceRoleARN: "arn:aws:iam::123XXXXXXXX:role/eks-access"
+
+kubernetesNetworkConfig:
+  ipFamily: "IPv4" # we want no IPv6 CIDR block when creating VPC and cluster.
+
+# I want eksctl to take care of creating the necessary VPCs
+# If i want to attach to existing VPCs that i created, see doc https://eksctl.io/usage/vpc-configuration/
+# https://eksctl.io/usage/vpc-cluster-access/
+vpc:
+  clusterEndpoints: # Cluster endpoint access
+    publicAccess: true
+    privateAccess: false
+
+# create Node Group
+managedNodeGroups:
+  - name: standard-workers
+    # we use existing IAM Instance Role from another cluster and make sure thesame account creating the nodegroup has this Role created. if we don't attach, eksctl will do this for us
+    # Make sure you attach the policies for AmazonEKSWorkerNodePolicy, AmazonEC2ContainerRegistryReadOnly, and AmazonEKS_CNI_Polic to the iam role you create
+    iam:
+      instanceRoleARN: "arn:aws:iam::123456789011:role/eksctl-test-cluster-a-3-nodegroup-NodeInstanceRole"
+    instanceType: t3.small
+    amiFamily: AmazonLinux2
+    minSize: 1
+    maxSize: 3
+    desiredCapacity: 1 # number of nodes that the group should launch with initially
+    volumeSize: 16 # giga bytes
+    ssh: # use existing EC2 key
+      publicKeyName: AWS_Udemy_EC2_Demo

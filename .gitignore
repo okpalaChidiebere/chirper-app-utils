@@ -1,0 +1,9 @@
+*.env
+.netrc
+*.pem
+*.srl
+**/k8s/*.json
+**/certs/*.pem
+**/certs/*.srl
+# *.cer
+# *.crt

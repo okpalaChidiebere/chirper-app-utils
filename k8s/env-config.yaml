@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  AWS_PROFILE: ___INSERT_AWS_PROFILE___
+  AWS_REGION: ___INSERT_AWS_REGION___
+metadata:
+  name: env-config

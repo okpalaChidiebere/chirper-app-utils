@@ -1,0 +1,65 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - prod
+      - stag
+      - dev
+    Description: Enter prod, stag or dev. Default is dev.
+
+Resources:
+  ChirperAppUsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        { "Fn::Join": ["", ["chirper-app-users-", { "Ref": "Stage" }]] }
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+  ChirperAppTweetsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        { "Fn::Join": ["", ["chirper-app-tweets-", { "Ref": "Stage" }]] }
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: author
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: author
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+  ImageFilterBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        { "Fn::Join": ["", ["chirper-app-thumbnail-", { "Ref": "Stage" }]] }
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ["*"]
+            AllowedMethods: [GET, PUT, POST, DELETE, HEAD]
+            AllowedOrigins: ["*"]
+            Id: CORSRuleId1
+            MaxAge: "3600"
+# see how to use Cloud formation to create IAM roles
+# https://repost.aws/knowledge-center/cloudformation-attach-managed-policy
