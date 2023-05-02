@@ -87,6 +87,11 @@ networks:
 
 - `docker compose up <service_name_1> <service_name_2>`
 
+## A few things i can explore in Docker compose
+
+- [Why to use labels in docker-compose](https://peterbabic.dev/blog/why-use-labels-docker-compose/)
+- [https://github.com/mmorejon/microservices-docker-go-mongodb/blob/main/compose.yaml](https://github.com/mmorejon/microservices-docker-go-mongodb/blob/main/compose.yaml)
+
 ## Simple http2 curl request
 
 ```bash
